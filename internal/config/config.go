@@ -3,13 +3,16 @@ package config
 import (
 	"context"
 	"errors"
+	"path/filepath"
 
 	"github.com/sethvargo/go-envconfig"
 )
 
+const defaultConfigFileName = "config.json"
+
 type Config struct {
-	Port        uint16 `env:"BROWSERFUL_PORT,default=8080"`
-	SessionsDir string `env:"BROWSERFUL_SESSIONS_DIR,default=data/sessions"`
+	Port    uint16 `env:"BROWSERFUL_PORT,default=8080"`
+	DataDir string `env:"BROWSERFUL_DATA_DIR,default=$HOME/.browserful"`
 }
 
 func Load() (*Config, error) {
@@ -29,13 +32,17 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) Validate() error {
-	if c.SessionsDir == "" {
-		return errors.New("sessions dir cannot be empty")
-	}
-
 	if c.Port == 0 {
 		return errors.New("port cannot be 0")
 	}
 
+	if c.DataDir == "" {
+		return errors.New("data dir cannot be empty")
+	}
+
 	return nil
+}
+
+func (c *Config) ConfigFilePath() string {
+	return filepath.Join(c.DataDir, defaultConfigFileName)
 }
