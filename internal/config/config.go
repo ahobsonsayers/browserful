@@ -15,7 +15,6 @@ type Config struct {
 	AllowedOrigins  []string `env:"BROWSERFULL_ALLOWED_ORIGINS"`
 	BrowserExecPath string   `env:"BROWSERFULL_BROWSER_EXECUTABLE_PATH"`
 	DataDir         string   `env:"BROWSERFULL_DATA_DIR,default=$HOME/.browserfull"`
-	DashboardPort   uint16   `env:"BROWSERFULL_DASHBOARD_PORT"`
 }
 
 func Load() (*Config, error) {
