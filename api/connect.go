@@ -8,17 +8,17 @@ import (
 	"github.com/ahobsonsayers/browserful/internal/proxy"
 )
 
-// LaunchDefaultSession is overridden by the ServerOverrides LaunchDefaultSession below
-func (Server) LaunchDefaultSession(
-	context.Context, LaunchDefaultSessionRequestObject,
-) (LaunchDefaultSessionResponseObject, error) {
+// ConnectDefaultSession is overridden by the ServerOverrides ConnectDefaultSession below
+func (Server) ConnectDefaultSession(
+	context.Context, ConnectDefaultSessionRequestObject,
+) (ConnectDefaultSessionResponseObject, error) {
 	return nil, nil
 }
 
-// LaunchNamedSession is overridden by the ServerOverrides LaunchNamedSession below
-func (Server) LaunchNamedSession(
-	context.Context, LaunchNamedSessionRequestObject,
-) (LaunchNamedSessionResponseObject, error) {
+// ConnectNamedSession is overridden by the ServerOverrides ConnectNamedSession below
+func (Server) ConnectNamedSession(
+	context.Context, ConnectNamedSessionRequestObject,
+) (ConnectNamedSessionResponseObject, error) {
 	return nil, nil
 }
 
@@ -29,16 +29,16 @@ func (Server) CloseSession(
 	return nil, nil
 }
 
-func (s ServerOverrides) LaunchDefaultSession(w http.ResponseWriter, r *http.Request) {
-	err := s.handleLaunchSession(w, r, "default")
+func (s ServerOverrides) ConnectDefaultSession(w http.ResponseWriter, r *http.Request) {
+	err := s.handleConnect(w, r, "default")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (s ServerOverrides) LaunchNamedSession(w http.ResponseWriter, r *http.Request, sessionName string) {
-	err := s.handleLaunchSession(w, r, sessionName)
+func (s ServerOverrides) ConnectNamedSession(w http.ResponseWriter, r *http.Request, sessionName string) {
+	err := s.handleConnect(w, r, sessionName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,7 +55,7 @@ func (s ServerOverrides) CloseSession(w http.ResponseWriter, _ *http.Request, se
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s ServerOverrides) handleLaunchSession(
+func (s ServerOverrides) handleConnect(
 	w http.ResponseWriter, r *http.Request, sessionName string,
 ) error {
 	info, err := s.agentBrowser.Launch(sessionName)

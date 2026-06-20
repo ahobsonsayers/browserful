@@ -21,23 +21,35 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Connect to the default browser session CDP WebSocket (launches if not running)
+	// (GET /connect)
+	ConnectDefaultSession(w http.ResponseWriter, r *http.Request)
+	// Connect to a named browser session CDP WebSocket (launches if not running)
+	// (GET /connect/{sessionName})
+	ConnectNamedSession(w http.ResponseWriter, r *http.Request, sessionName string)
 	// Health check
 	// (GET /health)
 	HealthCheck(w http.ResponseWriter, r *http.Request)
-	// Launch a browser session and connect to its CDP WebSocket
-	// (POST /sessions)
-	LaunchDefaultSession(w http.ResponseWriter, r *http.Request)
 	// Close a browser session
 	// (DELETE /sessions/{sessionName})
 	CloseSession(w http.ResponseWriter, r *http.Request, sessionName string)
-	// Launch a named browser session and connect to its CDP WebSocket
-	// (POST /sessions/{sessionName})
-	LaunchNamedSession(w http.ResponseWriter, r *http.Request, sessionName string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Connect to the default browser session CDP WebSocket (launches if not running)
+// (GET /connect)
+func (_ Unimplemented) ConnectDefaultSession(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Connect to a named browser session CDP WebSocket (launches if not running)
+// (GET /connect/{sessionName})
+func (_ Unimplemented) ConnectNamedSession(w http.ResponseWriter, r *http.Request, sessionName string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Health check
 // (GET /health)
@@ -45,21 +57,9 @@ func (_ Unimplemented) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Launch a browser session and connect to its CDP WebSocket
-// (POST /sessions)
-func (_ Unimplemented) LaunchDefaultSession(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Close a browser session
 // (DELETE /sessions/{sessionName})
 func (_ Unimplemented) CloseSession(w http.ResponseWriter, r *http.Request, sessionName string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Launch a named browser session and connect to its CDP WebSocket
-// (POST /sessions/{sessionName})
-func (_ Unimplemented) LaunchNamedSession(w http.ResponseWriter, r *http.Request, sessionName string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -72,11 +72,11 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// HealthCheck operation middleware
-func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Request) {
+// ConnectDefaultSession operation middleware
+func (siw *ServerInterfaceWrapper) ConnectDefaultSession(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.HealthCheck(w, r)
+		siw.Handler.ConnectDefaultSession(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -86,11 +86,37 @@ func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
-// LaunchDefaultSession operation middleware
-func (siw *ServerInterfaceWrapper) LaunchDefaultSession(w http.ResponseWriter, r *http.Request) {
+// ConnectNamedSession operation middleware
+func (siw *ServerInterfaceWrapper) ConnectNamedSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionName" -------------
+	var sessionName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionName", chi.URLParam(r, "sessionName"), &sessionName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionName", Err: err})
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LaunchDefaultSession(w, r)
+		siw.Handler.ConnectNamedSession(w, r, sessionName)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// HealthCheck operation middleware
+func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.HealthCheck(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -117,32 +143,6 @@ func (siw *ServerInterfaceWrapper) CloseSession(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CloseSession(w, r, sessionName)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// LaunchNamedSession operation middleware
-func (siw *ServerInterfaceWrapper) LaunchNamedSession(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "sessionName" -------------
-	var sessionName string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "sessionName", chi.URLParam(r, "sessionName"), &sessionName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionName", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LaunchNamedSession(w, r, sessionName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -266,19 +266,50 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/health", wrapper.HealthCheck)
+		r.Get(options.BaseURL+"/connect", wrapper.ConnectDefaultSession)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/sessions", wrapper.LaunchDefaultSession)
+		r.Get(options.BaseURL+"/connect/{sessionName}", wrapper.ConnectNamedSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/health", wrapper.HealthCheck)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/sessions/{sessionName}", wrapper.CloseSession)
 	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/sessions/{sessionName}", wrapper.LaunchNamedSession)
-	})
 
 	return r
+}
+
+type ConnectDefaultSessionRequestObject struct {
+}
+
+type ConnectDefaultSessionResponseObject interface {
+	VisitConnectDefaultSessionResponse(w http.ResponseWriter) error
+}
+
+type ConnectDefaultSession101Response struct {
+}
+
+func (response ConnectDefaultSession101Response) VisitConnectDefaultSessionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(101)
+	return nil
+}
+
+type ConnectNamedSessionRequestObject struct {
+	SessionName string `json:"sessionName"`
+}
+
+type ConnectNamedSessionResponseObject interface {
+	VisitConnectNamedSessionResponse(w http.ResponseWriter) error
+}
+
+type ConnectNamedSession101Response struct {
+}
+
+func (response ConnectNamedSession101Response) VisitConnectNamedSessionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(101)
+	return nil
 }
 
 type HealthCheckRequestObject struct {
@@ -293,21 +324,6 @@ type HealthCheck200Response struct {
 
 func (response HealthCheck200Response) VisitHealthCheckResponse(w http.ResponseWriter) error {
 	w.WriteHeader(200)
-	return nil
-}
-
-type LaunchDefaultSessionRequestObject struct {
-}
-
-type LaunchDefaultSessionResponseObject interface {
-	VisitLaunchDefaultSessionResponse(w http.ResponseWriter) error
-}
-
-type LaunchDefaultSession101Response struct {
-}
-
-func (response LaunchDefaultSession101Response) VisitLaunchDefaultSessionResponse(w http.ResponseWriter) error {
-	w.WriteHeader(101)
 	return nil
 }
 
@@ -327,36 +343,20 @@ func (response CloseSession204Response) VisitCloseSessionResponse(w http.Respons
 	return nil
 }
 
-type LaunchNamedSessionRequestObject struct {
-	SessionName string `json:"sessionName"`
-}
-
-type LaunchNamedSessionResponseObject interface {
-	VisitLaunchNamedSessionResponse(w http.ResponseWriter) error
-}
-
-type LaunchNamedSession101Response struct {
-}
-
-func (response LaunchNamedSession101Response) VisitLaunchNamedSessionResponse(w http.ResponseWriter) error {
-	w.WriteHeader(101)
-	return nil
-}
-
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Connect to the default browser session CDP WebSocket (launches if not running)
+	// (GET /connect)
+	ConnectDefaultSession(ctx context.Context, request ConnectDefaultSessionRequestObject) (ConnectDefaultSessionResponseObject, error)
+	// Connect to a named browser session CDP WebSocket (launches if not running)
+	// (GET /connect/{sessionName})
+	ConnectNamedSession(ctx context.Context, request ConnectNamedSessionRequestObject) (ConnectNamedSessionResponseObject, error)
 	// Health check
 	// (GET /health)
 	HealthCheck(ctx context.Context, request HealthCheckRequestObject) (HealthCheckResponseObject, error)
-	// Launch a browser session and connect to its CDP WebSocket
-	// (POST /sessions)
-	LaunchDefaultSession(ctx context.Context, request LaunchDefaultSessionRequestObject) (LaunchDefaultSessionResponseObject, error)
 	// Close a browser session
 	// (DELETE /sessions/{sessionName})
 	CloseSession(ctx context.Context, request CloseSessionRequestObject) (CloseSessionResponseObject, error)
-	// Launch a named browser session and connect to its CDP WebSocket
-	// (POST /sessions/{sessionName})
-	LaunchNamedSession(ctx context.Context, request LaunchNamedSessionRequestObject) (LaunchNamedSessionResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -388,6 +388,56 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// ConnectDefaultSession operation middleware
+func (sh *strictHandler) ConnectDefaultSession(w http.ResponseWriter, r *http.Request) {
+	var request ConnectDefaultSessionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConnectDefaultSession(ctx, request.(ConnectDefaultSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConnectDefaultSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConnectDefaultSessionResponseObject); ok {
+		if err := validResponse.VisitConnectDefaultSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConnectNamedSession operation middleware
+func (sh *strictHandler) ConnectNamedSession(w http.ResponseWriter, r *http.Request, sessionName string) {
+	var request ConnectNamedSessionRequestObject
+
+	request.SessionName = sessionName
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConnectNamedSession(ctx, request.(ConnectNamedSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConnectNamedSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConnectNamedSessionResponseObject); ok {
+		if err := validResponse.VisitConnectNamedSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // HealthCheck operation middleware
 func (sh *strictHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	var request HealthCheckRequestObject
@@ -405,30 +455,6 @@ func (sh *strictHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(HealthCheckResponseObject); ok {
 		if err := validResponse.VisitHealthCheckResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// LaunchDefaultSession operation middleware
-func (sh *strictHandler) LaunchDefaultSession(w http.ResponseWriter, r *http.Request) {
-	var request LaunchDefaultSessionRequestObject
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.LaunchDefaultSession(ctx, request.(LaunchDefaultSessionRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "LaunchDefaultSession")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(LaunchDefaultSessionResponseObject); ok {
-		if err := validResponse.VisitLaunchDefaultSessionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -462,44 +488,18 @@ func (sh *strictHandler) CloseSession(w http.ResponseWriter, r *http.Request, se
 	}
 }
 
-// LaunchNamedSession operation middleware
-func (sh *strictHandler) LaunchNamedSession(w http.ResponseWriter, r *http.Request, sessionName string) {
-	var request LaunchNamedSessionRequestObject
-
-	request.SessionName = sessionName
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.LaunchNamedSession(ctx, request.(LaunchNamedSessionRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "LaunchNamedSession")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(LaunchNamedSessionResponseObject); ok {
-		if err := validResponse.VisitLaunchNamedSessionResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"zJJBbxMxEIX/ijXixibZABf2VtIDlRCqlAMSVUFTe5K1umsbz7goRP7vyN6qQDbigDj0ZEu2n7/33hzB",
-	"up2H7ghiZSDo4F3035niLg3q4voKGnigyNY76KBdrpct5AZ8IIfBQgevl+2yhQYCSs9FZtUTDtKX7Z6k",
-	"LD5QRLHeXRno4H093vSk76GBSBy8Y6pPX7VtWQyxjjbI9OeW4oPVpCyrSfkAOTfAaRwxHp4Ela6K5WjF",
-	"xAW4agbPZyA+YHK6v6QdpkG20/VTmnW7ntN8orut1/ckKoV9REOKk9bEvEvDCdf0h0J1NwWqHrEUOqO0",
-	"d460KPHKCqvN5bV6kv7TxOr4uPuII+WJaCChuanN4Jl+mQkYcSShyNDdlJqhqy1BAw7H0vRvwtX8t2Qj",
-	"GegkJmqAdU8j1gxRhGJ5/+UGFz8uFp/bxduvi9uXL6ABOYSqJdG6PeR8Oyv1zblSpyh0QTYnwVUf89zK",
-	"3P2tzWLDPDv7/22KCrT5l1nK+WcAAAD//w==",
+	"zJLNbtQwEMdfZTTiACK7zRYu5Fa2B3pBlfaARFWQa082VhPbeMZFy8rvjuwULdou4oCQenIUZ37z/8ge",
+	"res9dnsUKyNhh++j/84U+zTCxfUVNvhAka132GG7XC1bzA36QE4Fix2+WbbLFhsMSgYumDPtnSMt5XlL",
+	"9fCBohLr3ZXBDtfz/SX1Ko2yIa7wBiNx8I6pUlbtqhyGWEcbZF7/ie42Xt+TQArbqAwBJ62JuU8j5twg",
+	"p2lScXdYAuJBBgIzL4O72RvwvBXWl9dwoL4cVXJ6IAbbg/MCMTln3fZVhf8ydrZ/nP6oJsp/s1k+MgeT",
+	"QUU1kVBk7G5K9tjV6LBBp6YS/2/wGsq3ZCMZ7CQmapD1QJMq24ISoVjmv9yoxY+Lxed28e7r4vb1C2xQ",
+	"dqGyJFq3xZxv/1+8Copw82/RDqRGGf6Y5Yd6vR5I3x//KOdt+9TJhuKD1QSWYSbvjvTPQNCVWBU8yuan",
+	"7RoaSehEwaNnenbNnrdvT+Uxd6KLZHPcZXkJ6rhAzDnnnwEAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
