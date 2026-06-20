@@ -10,9 +10,15 @@ import (
 	"github.com/ahobsonsayers/browserful/internal/agentbrowser"
 	"github.com/ahobsonsayers/browserful/internal/config"
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
