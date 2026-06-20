@@ -11,8 +11,9 @@ RUN CLOAKBROWSER_DIR=$(find /root/.cloakbrowser -maxdepth 1 -type d -name "chrom
 FROM golang:1.24 AS builder
 
 WORKDIR /app
-COPY . .
+COPY go.mod go.sum ./
 RUN go mod download
+COPY . .
 RUN go build -v -o ./bin/ .
 
 # Distribution Image
