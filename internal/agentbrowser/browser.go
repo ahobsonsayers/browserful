@@ -18,7 +18,7 @@ const defaultConfigContents = `{
   "$schema": "https://agent-browser.dev/schema.json"
 }`
 
-type Browser struct {
+type Client struct {
 	cfg      *config.Config
 	execPath string
 }
@@ -32,20 +32,20 @@ type SessionInfo struct {
 	Version     string
 }
 
-func New(cfg *config.Config) (*Browser, error) {
+func New(cfg *config.Config) (*Client, error) {
 	execPath, err := exec.LookPath(executableName)
 	if err != nil {
 		return nil, fmt.Errorf("%s executable not found on path: %w", executableName, err)
 	}
 
-	return &Browser{
+	return &Client{
 		cfg:      cfg,
 		execPath: execPath,
 	}, nil
 }
 
-func (b *Browser) Launch(sessionName string) (*SessionInfo, error) {
-	_, err := b.runCmd(
+func (c *Client) Launch(sessionName string) (*SessionInfo, error) {
+	_, err := c.runCmd(
 		"open", "about:blank",
 		"--session", sessionName,
 		"--json",
@@ -54,11 +54,11 @@ func (b *Browser) Launch(sessionName string) (*SessionInfo, error) {
 		return nil, fmt.Errorf("failed to launch browser: %w", err)
 	}
 
-	return b.GetSession(sessionName)
+	return c.GetSession(sessionName)
 }
 
-func (b *Browser) Close(sessionName string) error {
-	_, err := b.runCmd(
+func (c *Client) Close(sessionName string) error {
+	_, err := c.runCmd(
 		"close",
 		"--session", sessionName,
 		"--json",
@@ -70,8 +70,8 @@ func (b *Browser) Close(sessionName string) error {
 	return nil
 }
 
-func (b *Browser) ListSessions() ([]string, error) {
-	output, err := b.runCmd("session", "list", "--json")
+func (c *Client) ListSessions() ([]string, error) {
+	output, err := c.runCmd("session", "list", "--json")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get browser sessions: %w", err)
 	}
@@ -90,8 +90,8 @@ func (b *Browser) ListSessions() ([]string, error) {
 	return sessions, nil
 }
 
-func (b *Browser) GetSession(sessionName string) (*SessionInfo, error) {
-	baseDir := b.cfg.DataDir
+func (c *Client) GetSession(sessionName string) (*SessionInfo, error) {
+	baseDir := c.cfg.DataDir
 
 	pidFile := filepath.Join(baseDir, sessionName+".pid")
 	engineFile := filepath.Join(baseDir, sessionName+".engine")
@@ -118,7 +118,7 @@ func (b *Browser) GetSession(sessionName string) (*SessionInfo, error) {
 		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
-	cdpURL, err := b.getCDPURL(sessionName)
+	cdpURL, err := c.getCDPURL(sessionName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cdp url: %w", err)
 	}
@@ -135,20 +135,20 @@ func (b *Browser) GetSession(sessionName string) (*SessionInfo, error) {
 
 // runCmd executes an agent-browser command with the configured env and
 // returns its stdout output. It ensures the config file exists first.
-func (b *Browser) runCmd(args ...string) ([]byte, error) {
-	err := b.ensureConfigFile()
+func (c *Client) runCmd(args ...string) ([]byte, error) {
+	err := c.ensureConfigFile()
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(b.execPath, args...)
+	cmd := exec.Command(c.execPath, args...)
 	env := append(
 		os.Environ(),
-		fmt.Sprintf("AGENT_BROWSER_CONFIG=%s", b.cfg.ConfigFilePath()),
-		fmt.Sprintf("AGENT_BROWSER_SOCKET_DIR=%s", b.cfg.DataDir),
+		fmt.Sprintf("AGENT_BROWSER_CONFIG=%s", c.cfg.ConfigFilePath()),
+		fmt.Sprintf("AGENT_BROWSER_SOCKET_DIR=%s", c.cfg.DataDir),
 	)
-	if b.cfg.BrowserExecPath != "" {
-		env = append(env, fmt.Sprintf("AGENT_BROWSER_EXECUTABLE_PATH=%s", b.cfg.BrowserExecPath))
+	if c.cfg.BrowserExecPath != "" {
+		env = append(env, fmt.Sprintf("AGENT_BROWSER_EXECUTABLE_PATH=%s", c.cfg.BrowserExecPath))
 	}
 	cmd.Env = env
 	return cmd.CombinedOutput()
@@ -156,8 +156,8 @@ func (b *Browser) runCmd(args ...string) ([]byte, error) {
 
 // ensureConfigFile ensures an agent-browser config file exists in the
 // data dir, creating it with the default content if it does not
-func (b *Browser) ensureConfigFile() error {
-	configFilePath := b.cfg.ConfigFilePath()
+func (c *Client) ensureConfigFile() error {
+	configFilePath := c.cfg.ConfigFilePath()
 
 	_, err := os.Stat(configFilePath)
 	if err == nil {
@@ -168,12 +168,12 @@ func (b *Browser) ensureConfigFile() error {
 		return fmt.Errorf("config file '%s' has an issue: %w", configFilePath, err)
 	}
 
-	err = os.MkdirAll(b.cfg.DataDir, 0o755)
+	err = os.MkdirAll(c.cfg.DataDir, 0o755)
 	if err != nil {
-		return fmt.Errorf("failed to create data dir '%s' : %w", b.cfg.DataDir, err)
+		return fmt.Errorf("failed to create data dir '%s' : %w", c.cfg.DataDir, err)
 	}
 
-	err = os.WriteFile(b.cfg.ConfigFilePath(), []byte(defaultConfigContents), 0o644)
+	err = os.WriteFile(c.cfg.ConfigFilePath(), []byte(defaultConfigContents), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write default config to '%s': %w", configFilePath, err)
 	}
@@ -181,8 +181,8 @@ func (b *Browser) ensureConfigFile() error {
 	return nil
 }
 
-func (b *Browser) getCDPURL(sessionName string) (string, error) {
-	output, err := b.runCmd(
+func (c *Client) getCDPURL(sessionName string) (string, error) {
+	output, err := c.runCmd(
 		"get", "cdp-url",
 		"--session", sessionName,
 		"--json",

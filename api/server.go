@@ -16,13 +16,13 @@ var _ StrictServerInterface = Server{}
 // It satisfies the service interface by embedding another server interface
 type ServerOverrides struct {
 	ServerInterface
-	agentBrowser   *agentbrowser.Browser
+	agentBrowser   *agentbrowser.Client
 	allowedOrigins []string
 }
 
 var _ ServerInterface = ServerOverrides{}
 
-func NewServer(agentBrowser *agentbrowser.Browser, cfg *config.Config) ServerInterface {
+func NewServer(agentBrowser *agentbrowser.Client, cfg *config.Config) ServerInterface {
 	// Create strict service
 	strictServer := Server{}
 
