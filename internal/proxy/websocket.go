@@ -28,15 +28,20 @@ func CDP(
 		return fmt.Errorf("invalid cdp url: %w", err)
 	}
 
-	proxy := websocketproxy.NewProxy(parsedCDPUrl)
-	proxy.Upgrader = NewUpgrader(allowedOrigins)
-	// Strip Origin from the outbound headers so the chrome cdp 
-	// endpoint doesn't reject the connection. Out upgrader origin 
-	// check will still run against the inbound request.
-	proxy.Director = func(_ *http.Request, out http.Header) {
-		out.Del("Origin")
+	proxy := &websocketproxy.WebsocketProxy{
+		Director: func(_ *http.Request, out http.Header) {
+			// Strip Origin from the outbound headers so the chrome cpod
+			// endpoint doesn't reject the connection. Our upgrader origin
+			// check still runs against the inbound request.
+			out.Del("Origin")
+		},
+		Backend: func(_ *http.Request) *url.URL {
+			return parsedCDPUrl
+		},
+		Upgrader: NewUpgrader(allowedOrigins),
 	}
 	proxy.ServeHTTP(response, request)
+
 	return nil
 }
 
