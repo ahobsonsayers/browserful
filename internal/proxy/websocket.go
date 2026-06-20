@@ -16,7 +16,7 @@ func NewUpgrader(allowedOrigins []string) *websocket.Upgrader {
 	}
 }
 
-func ProxyCDP(
+func CDP(
 	response http.ResponseWriter,
 	request *http.Request,
 	cdpURL string,
@@ -44,7 +44,7 @@ func newOriginChecker(allowedOrigins []string) func(r *http.Request) bool {
 	// default origin check function in gorilla/websocket
 	return func(request *http.Request) bool {
 		origin := request.Header.Get("Origin")
-		if len(origin) == 0 {
+		if origin == "" {
 			return true
 		}
 		originUrl, err := url.Parse(origin)

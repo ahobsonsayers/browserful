@@ -63,7 +63,7 @@ func (s ServerOverrides) handleLaunchSession(
 		return fmt.Errorf("error launching browser session cdp: %w", err)
 	}
 
-	err = proxy.ProxyCDP(w, r, info.CDPURL, s.allowedOrigins)
+	err = proxy.CDP(w, r, info.CDPURL, s.allowedOrigins)
 	if err != nil {
 		return fmt.Errorf("error proxying cdp: %w", err)
 	}
