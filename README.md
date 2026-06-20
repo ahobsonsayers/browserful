@@ -8,10 +8,14 @@ Connect tools like [browser-use](https://github.com/browser-use/browser-use), [a
 
 ### Run with Docker
 
+The Docker image is self-contained — it bundles `agent-browser`, [cloakbrowser](https://github.com/CloakHQ/CloakBrowser) (a stealth-patched Chromium), and all system libraries. No host dependencies beyond Docker.
+
 ```bash
 docker build -t browserful .
 docker run --rm -p 8080:8080 browserful
 ```
+
+agent-browser uses the bundled cloakbrowser chromium as its default browser. To use a different browser, override `BROWSERFUL_BROWSER_EXECUTABLE_PATH` at `docker run` time.
 
 ### Run locally
 
@@ -61,6 +65,7 @@ Configured via environment variables:
 | `BROWSERFUL_PORT` | `8080` | HTTP listen port |
 | `BROWSERFUL_DATA_DIR` | `$HOME/.browserful` | Session metadata + agent-browser config dir |
 | `BROWSERFUL_ALLOWED_ORIGINS` | _none_ | Comma-separated allowed WebSocket origin hostnames; `*` allows all |
+| `BROWSERFUL_BROWSER_EXECUTABLE_PATH` | _none_ | Browser executable path passed to agent-browser; overrides Chrome auto-discovery |
 
 ## How it works
 

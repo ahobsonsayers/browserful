@@ -79,6 +79,7 @@ api/middleware/        — OpenAPI request validation + structured request loggi
 
 - **`agent-browser` CLI** — The `internal/agentbrowser` package shells out to `agent-browser open`, `agent-browser get cdp-url`, `agent-browser session list`, `agent-browser close`. The server (`main.go`) fails to start without this binary on `$PATH` (`exec.LookPath`). Integration tests also require it.
 - **Docs**: https://agent-browser.dev/ (Commands: https://agent-browser.dev/commands, Configuration: https://agent-browser.dev/configuration, Sessions: https://agent-browser.dev/sessions)
+- **Docker image** — The Dockerfile bundles `agent-browser` (v0.28.0, installed via npm builder stage) and cloakbrowser (stealth-patched Chromium from `cloakhq/cloakbrowser:latest`). `BROWSERFUL_BROWSER_EXECUTABLE_PATH=/opt/cloakbrowser/chrome` wires agent-browser to use the bundled cloakbrowser as its default browser. No host `agent-browser` or Chrome install is needed when running via Docker. Override `BROWSERFUL_BROWSER_EXECUTABLE_PATH` to use a different browser.
 
 ## Configuration
 
@@ -87,6 +88,7 @@ Loaded from environment variables via `go-envconfig` (`internal/config/config.go
 - `BROWSERFUL_PORT` — default `8080`
 - `BROWSERFUL_DATA_DIR` — default `$HOME/.browserful`; sets `AGENT_BROWSER_SOCKET_DIR` (session metadata files) and `AGENT_BROWSER_CONFIG` (`<DataDir>/config.json`). See https://agent-browser.dev/configuration.
 - `BROWSERFUL_ALLOWED_ORIGINS` — comma-separated list of allowed WebSocket origin hostnames; `*` disables origin checking.
+- `BROWSERFUL_BROWSER_EXECUTABLE_PATH` — optional; sets `AGENT_BROWSER_EXECUTABLE_PATH` to point agent-browser at a custom browser binary (e.g. the bundled cloakbrowser in Docker).
 - `go-envconfig` runs default values through `os.Expand`, so `$HOME` in the `default=` tag works.
 
 ## Testing
@@ -96,7 +98,7 @@ Loaded from environment variables via `go-envconfig` (`internal/config/config.go
 - **Always use `require` (not `assert`) for error checks** — `require.NoError`, `require.Error`, etc. Failures should halt the test immediately. `assert` is fine for non-critical value checks.
 - `internal/agentbrowser` has an **integration test** (`TestAgentBrowserLaunch`) that launches a real `agent-browser` session. It has no skip guard — it runs on every `task test` and fails if `agent-browser` is not on `$PATH`.
 - **Unix socket path limit**: macOS enforces 103 chars max. The integration test uses `os.MkdirTemp("", "")` (short path) and `time.Now().UnixNano()` as session name to stay under the limit. Do not use `t.TempDir()` or UUID-based session names in that test — the paths exceed 103 chars and `agent-browser` exits 1.
-- CI runs `task test` on `ubuntu-latest` (see `.github/workflows/lint-test.yaml`), where `agent-browser` must be available or the integration test will fail the pipeline.
+- CI runs `task test` on `ubuntu-latest` (see `.github/workflows/lint-test.yaml`), where `agent-browser` is installed via `npm install -g agent-browser` (Node LTS setup) before running tests.
 
 ## CI / Release
 
