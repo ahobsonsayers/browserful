@@ -66,6 +66,7 @@ Configured via environment variables:
 | `BROWSERFULL_DATA_DIR` | `$HOME/.browserfull` | Session metadata + agent-browser config dir |
 | `BROWSERFULL_ALLOWED_ORIGINS` | _none_ | Comma-separated allowed WebSocket origin hostnames; `*` allows all |
 | `BROWSERFULL_BROWSER_EXECUTABLE_PATH` | _none_ | Browser executable path passed to agent-browser; overrides Chrome auto-discovery |
+| `BROWSERFULL_DASHBOARD_PORT` | _none_ | Port for the agent-browser dashboard; unset uses agent-browser's default (4848) |
 
 ## How it works
 

@@ -69,6 +69,7 @@ api/middleware/        — OpenAPI request validation + structured request loggi
 - `ListSessions` parses `data.sessions` array from CLI JSON output using `gjson`.
 - Uses `gjson` (not `encoding/json`) for all JSON parsing — check `gjson.Result.Type` / `IsArray()` rather than unmarshaling into structs.
 - Errors from `runCmd` are non-zero exit codes; `success` field in JSON output is not checked (redundant with exit code).
+- `StartDashboard`/`StopDashboard` (`dashboard.go`) wrap `agent-browser dashboard start [--port <n>]` / `dashboard stop`. Default port is 4848 when `port` arg is 0.
 
 ### `internal/proxy`
 
@@ -89,6 +90,7 @@ Loaded from environment variables via `go-envconfig` (`internal/config/config.go
 - `BROWSERFULL_DATA_DIR` — default `$HOME/.browserfull`; sets `AGENT_BROWSER_SOCKET_DIR` (session metadata files) and `AGENT_BROWSER_CONFIG` (`<DataDir>/config.json`). See https://agent-browser.dev/configuration.
 - `BROWSERFULL_ALLOWED_ORIGINS` — comma-separated list of allowed WebSocket origin hostnames; `*` disables origin checking.
 - `BROWSERFULL_BROWSER_EXECUTABLE_PATH` — optional; sets `AGENT_BROWSER_EXECUTABLE_PATH` to point agent-browser at a custom browser binary (e.g. the bundled cloakbrowser in Docker).
+- `BROWSERFULL_DASHBOARD_PORT` — optional; no default (0 lets agent-browser use its own default, 4848).
 - `go-envconfig` runs default values through `os.Expand`, so `$HOME` in the `default=` tag works.
 
 ## Testing
