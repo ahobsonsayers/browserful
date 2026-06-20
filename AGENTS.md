@@ -1,4 +1,4 @@
-# Browserful — Agent Guidance
+# Browserfull — Agent Guidance
 
 A Go HTTP server that proxies to browser CDP (Chrome DevTools Protocol) sessions via WebSocket.
 
@@ -79,16 +79,16 @@ api/middleware/        — OpenAPI request validation + structured request loggi
 
 - **`agent-browser` CLI** — The `internal/agentbrowser` package shells out to `agent-browser open`, `agent-browser get cdp-url`, `agent-browser session list`, `agent-browser close`. The server (`main.go`) fails to start without this binary on `$PATH` (`exec.LookPath`). Integration tests also require it.
 - **Docs**: https://agent-browser.dev/ (Commands: https://agent-browser.dev/commands, Configuration: https://agent-browser.dev/configuration, Sessions: https://agent-browser.dev/sessions)
-- **Docker image** — The Dockerfile bundles `agent-browser` (v0.28.0, installed via npm builder stage) and cloakbrowser (stealth-patched Chromium from `cloakhq/cloakbrowser:latest`). `BROWSERFUL_BROWSER_EXECUTABLE_PATH=/opt/cloakbrowser/chrome` wires agent-browser to use the bundled cloakbrowser as its default browser. No host `agent-browser` or Chrome install is needed when running via Docker. Override `BROWSERFUL_BROWSER_EXECUTABLE_PATH` to use a different browser.
+- **Docker image** — The Dockerfile bundles `agent-browser` (v0.28.0, installed via npm builder stage) and cloakbrowser (stealth-patched Chromium from `cloakhq/cloakbrowser:latest`). `BROWSERFULL_BROWSER_EXECUTABLE_PATH=/opt/cloakbrowser/chrome` wires agent-browser to use the bundled cloakbrowser as its default browser. No host `agent-browser` or Chrome install is needed when running via Docker. Override `BROWSERFULL_BROWSER_EXECUTABLE_PATH` to use a different browser.
 
 ## Configuration
 
 Loaded from environment variables via `go-envconfig` (`internal/config/config.go`):
 
-- `BROWSERFUL_PORT` — default `8080`
-- `BROWSERFUL_DATA_DIR` — default `$HOME/.browserful`; sets `AGENT_BROWSER_SOCKET_DIR` (session metadata files) and `AGENT_BROWSER_CONFIG` (`<DataDir>/config.json`). See https://agent-browser.dev/configuration.
-- `BROWSERFUL_ALLOWED_ORIGINS` — comma-separated list of allowed WebSocket origin hostnames; `*` disables origin checking.
-- `BROWSERFUL_BROWSER_EXECUTABLE_PATH` — optional; sets `AGENT_BROWSER_EXECUTABLE_PATH` to point agent-browser at a custom browser binary (e.g. the bundled cloakbrowser in Docker).
+- `BROWSERFULL_PORT` — default `8080`
+- `BROWSERFULL_DATA_DIR` — default `$HOME/.browserfull`; sets `AGENT_BROWSER_SOCKET_DIR` (session metadata files) and `AGENT_BROWSER_CONFIG` (`<DataDir>/config.json`). See https://agent-browser.dev/configuration.
+- `BROWSERFULL_ALLOWED_ORIGINS` — comma-separated list of allowed WebSocket origin hostnames; `*` disables origin checking.
+- `BROWSERFULL_BROWSER_EXECUTABLE_PATH` — optional; sets `AGENT_BROWSER_EXECUTABLE_PATH` to point agent-browser at a custom browser binary (e.g. the bundled cloakbrowser in Docker).
 - `go-envconfig` runs default values through `os.Expand`, so `$HOME` in the `default=` tag works.
 
 ## Testing
@@ -103,5 +103,5 @@ Loaded from environment variables via `go-envconfig` (`internal/config/config.go
 ## CI / Release
 
 - **PRs** (`.github/workflows/pull-request.yaml`): lint (golangci-lint-action) + test (`task test`) via reusable `lint-test.yaml`.
-- **Main** (`.github/workflows/main.yaml`): lint-test → build and push Docker image (`arranhs/browserful`) tagged `develop` + commit SHA.
+- **Main** (`.github/workflows/main.yaml`): lint-test → build and push Docker image (`arranhs/browserfull`) tagged `develop` + commit SHA.
 - **Releases** (`.github/workflows/release.yaml`): manual workflow dispatch with semver bump; creates annotated git tag, GitHub release, then builds/pushes Docker image tagged `latest` + version.

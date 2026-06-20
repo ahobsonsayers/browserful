@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: Browserful API
+  title: Browserfull API
   version: 0.1.0
 paths:
   /health:

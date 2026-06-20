@@ -31,7 +31,7 @@ tasks:
 
   build:docker:
     cmds:
-      - docker build . --tag browserful
+      - docker build . --tag browserfull
 
   run:
     cmds:
@@ -42,6 +42,6 @@ tasks:
     cmds:
       - |
         docker run --rm \
-          --name browserful \
+          --name browserfull \
           -p 8080:8080 \
-          browserful
+          browserfull

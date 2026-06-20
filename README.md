@@ -1,8 +1,8 @@
-# Browserful
+# Browserfull
 
 A BAAS (browser-as-a-service) server built on [agent-browser](https://agent-browser.dev/) that spins up browsers on demand and exposes their CDP (Chrome DevTools Protocol) WebSocket endpoint.
 
-Connect tools like [browser-use](https://github.com/browser-use/browser-use), [agent-browser](https://agent-browser.dev/), Puppeteer, Playwright, or any CDP client to a browser started via this API — yes, even agent-browser itself can connect back to a session Browserful launched.
+Connect tools like [browser-use](https://github.com/browser-use/browser-use), [agent-browser](https://agent-browser.dev/), Puppeteer, Playwright, or any CDP client to a browser started via this API — yes, even agent-browser itself can connect back to a session Browserfull launched.
 
 ## Quick start
 
@@ -11,11 +11,11 @@ Connect tools like [browser-use](https://github.com/browser-use/browser-use), [a
 The Docker image is self-contained — it bundles `agent-browser`, [cloakbrowser](https://github.com/CloakHQ/CloakBrowser) (a stealth-patched Chromium), and all system libraries. No host dependencies beyond Docker.
 
 ```bash
-docker build -t browserful .
-docker run --rm -p 8080:8080 browserful
+docker build -t browserfull .
+docker run --rm -p 8080:8080 browserfull
 ```
 
-agent-browser uses the bundled cloakbrowser chromium as its default browser. To use a different browser, override `BROWSERFUL_BROWSER_EXECUTABLE_PATH` at `docker run` time.
+agent-browser uses the bundled cloakbrowser chromium as its default browser. To use a different browser, override `BROWSERFULL_BROWSER_EXECUTABLE_PATH` at `docker run` time.
 
 ### Run locally
 
@@ -29,14 +29,14 @@ Server starts on `0.0.0.0:8080`.
 
 ## Connect to a session
 
-Point any CDP-compatible client at a Browserful `/connect` URL. The connection upgrades to a WebSocket and is transparently proxied to the underlying browser's CDP endpoint — no separate launch or CDP-discovery step needed.
+Point any CDP-compatible client at a Browserfull `/connect` URL. The connection upgrades to a WebSocket and is transparently proxied to the underlying browser's CDP endpoint — no separate launch or CDP-discovery step needed.
 
 ```python
 # Example with browser-use
 from browser_use import BrowserUse
 
 bu = BrowserUse(ws_endpoint="ws://localhost:8080/connect/my-session")
-# Browserful launches the browser and hands you its CDP stream
+# Browserfull launches the browser and hands you its CDP stream
 ```
 
 ```bash
@@ -62,19 +62,19 @@ Configured via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BROWSERFUL_PORT` | `8080` | HTTP listen port |
-| `BROWSERFUL_DATA_DIR` | `$HOME/.browserful` | Session metadata + agent-browser config dir |
-| `BROWSERFUL_ALLOWED_ORIGINS` | _none_ | Comma-separated allowed WebSocket origin hostnames; `*` allows all |
-| `BROWSERFUL_BROWSER_EXECUTABLE_PATH` | _none_ | Browser executable path passed to agent-browser; overrides Chrome auto-discovery |
+| `BROWSERFULL_PORT` | `8080` | HTTP listen port |
+| `BROWSERFULL_DATA_DIR` | `$HOME/.browserfull` | Session metadata + agent-browser config dir |
+| `BROWSERFULL_ALLOWED_ORIGINS` | _none_ | Comma-separated allowed WebSocket origin hostnames; `*` allows all |
+| `BROWSERFULL_BROWSER_EXECUTABLE_PATH` | _none_ | Browser executable path passed to agent-browser; overrides Chrome auto-discovery |
 
 ## How it works
 
 ```
-Your CDP client ──WS──▶ Browserful ──WS──▶ agent-browser ──▶ Chrome/Chromium
+Your CDP client ──WS──▶ Browserfull ──WS──▶ agent-browser ──▶ Chrome/Chromium
                      (HTTP server)         (manages browser)   (CDP target)
 ```
 
-Browserful is a thin HTTP + WebSocket layer over `agent-browser`. When you hit `/connect/{name}`, it asks `agent-browser` to launch a browser, then proxies your WebSocket connection straight through to that browser's CDP endpoint. Closing a session calls `agent-browser close` under the hood.
+Browserfull is a thin HTTP + WebSocket layer over `agent-browser`. When you hit `/connect/{name}`, it asks `agent-browser` to launch a browser, then proxies your WebSocket connection straight through to that browser's CDP endpoint. Closing a session calls `agent-browser close` under the hood.
 
 ## Development
 
@@ -94,7 +94,7 @@ task build:docker # build docker image
 
 ## Acknowledgements
 
-This project is a thin server on top of [agent-browser](https://agent-browser.dev/) — give it a star if you find Browserful useful.
+This project is a thin server on top of [agent-browser](https://agent-browser.dev/) — give it a star if you find Browserfull useful.
 
 ## License
 

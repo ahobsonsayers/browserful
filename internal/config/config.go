@@ -11,10 +11,10 @@ import (
 const defaultConfigFileName = "config.json"
 
 type Config struct {
-	Port            uint16   `env:"BROWSERFUL_PORT,default=8080"`
-	AllowedOrigins  []string `env:"BROWSERFUL_ALLOWED_ORIGINS"`
-	BrowserExecPath string   `env:"BROWSERFUL_BROWSER_EXECUTABLE_PATH"`
-	DataDir         string   `env:"BROWSERFUL_DATA_DIR,default=$HOME/.browserful"`
+	Port            uint16   `env:"BROWSERFULL_PORT,default=8080"`
+	AllowedOrigins  []string `env:"BROWSERFULL_ALLOWED_ORIGINS"`
+	BrowserExecPath string   `env:"BROWSERFULL_BROWSER_EXECUTABLE_PATH"`
+	DataDir         string   `env:"BROWSERFULL_DATA_DIR,default=$HOME/.browserfull"`
 }
 
 func Load() (*Config, error) {

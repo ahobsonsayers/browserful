@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ahobsonsayers/browserful/api"
-	"github.com/ahobsonsayers/browserful/api/middleware"
-	"github.com/ahobsonsayers/browserful/internal/agentbrowser"
-	"github.com/ahobsonsayers/browserful/internal/config"
+	"github.com/ahobsonsayers/browserfull/api"
+	"github.com/ahobsonsayers/browserfull/api/middleware"
+	"github.com/ahobsonsayers/browserfull/internal/agentbrowser"
+	"github.com/ahobsonsayers/browserfull/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -34,7 +34,7 @@ func main() {
 
 	// Create router
 	router := chi.NewRouter()
-	router.Use(middleware.Logger("browserful")) // Contains recoverer
+	router.Use(middleware.Logger("browserfull")) // Contains recoverer
 	router.Use(middleware.OpenAPIValidation("/", openapiSpec))
 
 	// Create handler

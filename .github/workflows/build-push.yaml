@@ -26,7 +26,7 @@ on:
         required: true
 
 env:
-  IMAGE_REPOSITORY: arranhs/browserful
+  IMAGE_REPOSITORY: arranhs/browserfull
 
 jobs:
   build-push:

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ahobsonsayers/browserful/internal/proxy"
+	"github.com/ahobsonsayers/browserfull/internal/proxy"
 
 	haikunator "github.com/atrox/haikunatorgo/v2"
 )

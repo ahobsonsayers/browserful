@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ahobsonsayers/browserful/internal/config"
+	"github.com/ahobsonsayers/browserfull/internal/config"
 	"github.com/tidwall/gjson"
 )
 

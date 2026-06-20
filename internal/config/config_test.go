@@ -18,17 +18,17 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name:    "valid defaults",
-			cfg:     Config{Port: 8080, DataDir: "/tmp/browserful"},
+			cfg:     Config{Port: 8080, DataDir: "/tmp/browserfull"},
 			wantErr: false,
 		},
 		{
 			name:    "valid high port",
-			cfg:     Config{Port: 65535, DataDir: "/tmp/browserful"},
+			cfg:     Config{Port: 65535, DataDir: "/tmp/browserfull"},
 			wantErr: false,
 		},
 		{
 			name:    "zero port",
-			cfg:     Config{Port: 0, DataDir: "/tmp/browserful"},
+			cfg:     Config{Port: 0, DataDir: "/tmp/browserfull"},
 			wantErr: true,
 		},
 		{
@@ -53,8 +53,8 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoad_Defaults(t *testing.T) {
-	os.Unsetenv("BROWSERFUL_PORT")
-	os.Unsetenv("BROWSERFUL_DATA_DIR")
+	os.Unsetenv("BROWSERFULL_PORT")
+	os.Unsetenv("BROWSERFULL_DATA_DIR")
 
 	cfg, err := Load()
 	require.NoError(t, err)
@@ -64,18 +64,18 @@ func TestLoad_Defaults(t *testing.T) {
 }
 
 func TestLoad_Override(t *testing.T) {
-	t.Setenv("BROWSERFUL_PORT", "9090")
-	t.Setenv("BROWSERFUL_DATA_DIR", "/tmp/browserful-data")
+	t.Setenv("BROWSERFULL_PORT", "9090")
+	t.Setenv("BROWSERFULL_DATA_DIR", "/tmp/browserfull-data")
 
 	cfg, err := Load()
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t, uint16(9090), cfg.Port)
-	assert.Equal(t, "/tmp/browserful-data", cfg.DataDir)
+	assert.Equal(t, "/tmp/browserfull-data", cfg.DataDir)
 }
 
 func TestLoad_InvalidPort(t *testing.T) {
-	t.Setenv("BROWSERFUL_PORT", "not-a-number")
+	t.Setenv("BROWSERFULL_PORT", "not-a-number")
 
 	cfg, err := Load()
 	require.Error(t, err)
@@ -84,7 +84,7 @@ func TestLoad_InvalidPort(t *testing.T) {
 
 func TestLoad_AllowedOrigins(t *testing.T) {
 	t.Run("unset defaults to empty", func(t *testing.T) {
-		os.Unsetenv("BROWSERFUL_ALLOWED_ORIGINS")
+		os.Unsetenv("BROWSERFULL_ALLOWED_ORIGINS")
 
 		cfg, err := Load()
 		require.NoError(t, err)
@@ -93,7 +93,7 @@ func TestLoad_AllowedOrigins(t *testing.T) {
 	})
 
 	t.Run("single value", func(t *testing.T) {
-		t.Setenv("BROWSERFUL_ALLOWED_ORIGINS", "*")
+		t.Setenv("BROWSERFULL_ALLOWED_ORIGINS", "*")
 
 		cfg, err := Load()
 		require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestLoad_AllowedOrigins(t *testing.T) {
 	})
 
 	t.Run("comma separated", func(t *testing.T) {
-		t.Setenv("BROWSERFUL_ALLOWED_ORIGINS", "127.0.0.1,10.0.0.5")
+		t.Setenv("BROWSERFULL_ALLOWED_ORIGINS", "127.0.0.1,10.0.0.5")
 
 		cfg, err := Load()
 		require.NoError(t, err)

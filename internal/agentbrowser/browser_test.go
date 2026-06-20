@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ahobsonsayers/browserful/internal/config"
+	"github.com/ahobsonsayers/browserfull/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

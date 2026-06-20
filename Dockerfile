@@ -21,11 +21,11 @@ FROM debian:stable-slim
 
 ARG TARGETARCH
 
-ENV HOME=/browserful
+ENV HOME=/browserfull
 
-ENV BROWSERFUL_ALLOWED_ORIGINS=*
-ENV BROWSERFUL_BROWSER_EXECUTABLE_PATH=/opt/cloakbrowser/chrome
-ENV BROWSERFUL_DATA_DIR=/data
+ENV BROWSERFULL_ALLOWED_ORIGINS=*
+ENV BROWSERFULL_BROWSER_EXECUTABLE_PATH=/opt/cloakbrowser/chrome
+ENV BROWSERFULL_DATA_DIR=/data
 
 # Install system dependencies
 RUN apt-get update && \
@@ -81,8 +81,8 @@ RUN apt-get update && \
 
 # User and directory setup
 RUN useradd browser --uid 1000 --home-dir "$HOME" && \
-    mkdir -p "$HOME" "$BROWSERFUL_DATA_DIR" && \
-    chown browser:browser "$HOME" "$BROWSERFUL_DATA_DIR"
+    mkdir -p "$HOME" "$BROWSERFULL_DATA_DIR" && \
+    chown browser:browser "$HOME" "$BROWSERFULL_DATA_DIR"
 
 # Install agent-browser
 COPY --from=agent-browser --chown=browser:browser \
@@ -92,11 +92,11 @@ COPY --from=agent-browser --chown=browser:browser \
 # Install cloakbrowser
 COPY --from=cloakbrowser --chown=browser:browser /chromium/ /opt/cloakbrowser/
 
-# Install browserful
-COPY --from=builder --chown=browser:browser /app/bin/browserful /usr/local/bin/browserful
+# Install browserfull
+COPY --from=builder --chown=browser:browser /app/bin/browserfull /usr/local/bin/browserfull
 
 USER browser
 WORKDIR "$HOME"
 
 ENTRYPOINT ["tini", "--"]
-CMD ["/usr/local/bin/browserful"]
+CMD ["/usr/local/bin/browserfull"]

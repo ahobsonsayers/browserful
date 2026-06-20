@@ -1,4 +1,4 @@
-module github.com/ahobsonsayers/browserful
+module github.com/ahobsonsayers/browserfull
 
 go 1.24.3
 

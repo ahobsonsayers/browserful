@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/ahobsonsayers/browserful/internal/agentbrowser"
-	"github.com/ahobsonsayers/browserful/internal/config"
+	"github.com/ahobsonsayers/browserfull/internal/agentbrowser"
+	"github.com/ahobsonsayers/browserfull/internal/config"
 )
 
 // Server is the type that all handlers are defined on as methods
