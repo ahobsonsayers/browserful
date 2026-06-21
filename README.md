@@ -25,7 +25,7 @@ Prerequisites: Go 1.24.3+ and [`agent-browser`](https://agent-browser.dev/) on y
 go run .
 ```
 
-Server starts on `0.0.0.0:8080`.
+Server starts on `0.0.0.0:8080`. The agent-browser dashboard is started automatically and served at the url
 
 ## Connect to a session
 
@@ -66,7 +66,6 @@ Configured via environment variables:
 | `BROWSERFULL_DATA_DIR` | `$HOME/.browserfull` | Session metadata + agent-browser config dir |
 | `BROWSERFULL_ALLOWED_ORIGINS` | _none_ | Comma-separated allowed WebSocket origin hostnames; `*` allows all |
 | `BROWSERFULL_BROWSER_EXECUTABLE_PATH` | _none_ | Browser executable path passed to agent-browser; overrides Chrome auto-discovery |
-| `BROWSERFULL_DASHBOARD_PORT` | _none_ | Port for the agent-browser dashboard; unset uses agent-browser's default (4848) |
 
 ## How it works
 

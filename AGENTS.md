@@ -34,10 +34,10 @@ Available tasks:
 ## Architecture
 
 ```
-main.go               — Entrypoint: loads config, builds chi router with OpenAPI validation + logger middleware, serves on 0.0.0.0:<port>
+main.go               — Entrypoint: loads config, starts dashboard, builds chi router with API routes (OpenAPI-validated) + dashboard catch-all proxy, serves on 0.0.0.0:<port>
 internal/config        — Env-config (port, data dir, allowed origins); validates fields
 internal/agentbrowser  — Launches browser sessions via `agent-browser` CLI, reads session metadata from <DataDir>/
-internal/proxy         — WebSocket reverse proxy to a CDP URL (gorilla/websocket + koding/websocketproxy); origin checking against AllowedOrigins
+internal/proxy         — WebSocket reverse proxy to a CDP URL (gorilla/websocket + koding/websocketproxy); HTTP reverse proxy to the dashboard (httputil)
 api/                   — oapi-codegen generated HTTP server (chi) + hand-written handlers
 api/api.gen.go         — GENERATED. Do not edit. Regenerate with `task generate`.
 api/server.go          — Strict server + ServerOverrides wrapper holding agentBrowser + allowedOrigins
@@ -45,6 +45,10 @@ api/connect.go         — Connect (launch + CDP proxy) and close session handle
 api/health.go          — Health check handler
 api/middleware/        — OpenAPI request validation + structured request logging (httplog, includes recoverer)
 ```
+
+### Dashboard proxy
+
+The agent-browser dashboard binds to `127.0.0.1` only, so it cannot be exposed directly via Docker port mapping. Browserfull starts the dashboard (via `agent-browser dashboard start`) and reverse-proxies it at `/` on the same port as the HTTP API. The OpenAPI routes (`/connect`, `/sessions`, `/health`) are registered on a dedicated `apiRouter` with validation middleware and mounted via `router.Mount("/", apiHandler)`; they take precedence over the `/*` catch-all in chi's radix tree, so API requests are never swallowed by the dashboard proxy.
 
 ### OpenAPI / oapi-codegen
 
@@ -70,11 +74,12 @@ api/middleware/        — OpenAPI request validation + structured request loggi
 - `ListSessions` parses `data.sessions` array from CLI JSON output using `gjson`.
 - Uses `gjson` (not `encoding/json`) for all JSON parsing — check `gjson.Result.Type` / `IsArray()` rather than unmarshaling into structs.
 - Errors from `runCmd` are non-zero exit codes; `success` field in JSON output is not checked (redundant with exit code).
-- `StartDashboard`/`StopDashboard` (`dashboard.go`) wrap `agent-browser dashboard start [--port <n>]` / `dashboard stop`. Default port is 4848 when `port` arg is 0.
+- `StartDashboard`/`StopDashboard` (`dashboard.go`) wrap `agent-browser dashboard start` / `dashboard stop`. The dashboard always uses agent-browser's default port (4848) on loopback; it is not configurable because it is reverse-proxied through browserfull at `/`.
 
 ### `internal/proxy`
 
 - `proxy.CDP(w, r, cdpURL, allowedOrigins)` upgrades the inbound request to a WebSocket and proxies it to the CDP URL.
+- `proxy.Dashboard()` returns an `httputil.ReverseProxy` handler to the dashboard (hardcoded `http://127.0.0.1:4848`). Mounted as a `/*` catch-all on the main chi router in `main.go`.
 - Origin checker: if `allowedOrigins` contains `"*"`, all origins are accepted; otherwise the Origin header host must match the request host or be in `allowedOrigins`. Missing Origin header is allowed.
 
 ## External Dependencies
@@ -91,7 +96,6 @@ Loaded from environment variables via `go-envconfig` (`internal/config/config.go
 - `BROWSERFULL_DATA_DIR` — default `$HOME/.browserfull`; sets `AGENT_BROWSER_SOCKET_DIR` (session metadata files) and `AGENT_BROWSER_CONFIG` (`<DataDir>/config.json`). See https://agent-browser.dev/configuration.
 - `BROWSERFULL_ALLOWED_ORIGINS` — comma-separated list of allowed WebSocket origin hostnames; `*` disables origin checking.
 - `BROWSERFULL_BROWSER_EXECUTABLE_PATH` — optional; sets `AGENT_BROWSER_EXECUTABLE_PATH` to point agent-browser at a custom browser binary (e.g. the bundled cloakbrowser in Docker).
-- `BROWSERFULL_DASHBOARD_PORT` — optional; no default (0 lets agent-browser use its own default, 4848).
 - `go-envconfig` runs default values through `os.Expand`, so `$HOME` in the `default=` tag works.
 
 ## Testing

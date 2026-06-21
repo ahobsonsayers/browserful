@@ -2,8 +2,7 @@ package agentbrowser
 
 import "fmt"
 
-// StartDashboard starts the agent-browser observability dashboard server.
-// If DashboardPort is 0, agent-browser's default port (4848) is used.
+// StartDashboard starts the agent-browser observability dashboard
 func (c *Client) StartDashboard() error {
 	_, err := c.runCmd("dashboard", "start", "--json")
 	if err != nil {

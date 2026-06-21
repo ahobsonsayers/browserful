@@ -11,6 +11,7 @@ import (
 	"github.com/ahobsonsayers/browserfull/api/middleware"
 	"github.com/ahobsonsayers/browserfull/internal/agentbrowser"
 	"github.com/ahobsonsayers/browserfull/internal/config"
+	"github.com/ahobsonsayers/browserfull/internal/proxy"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -35,7 +36,6 @@ func main() {
 	// Create router
 	router := chi.NewRouter()
 	router.Use(middleware.Logger("browserfull")) // Contains recoverer
-	router.Use(middleware.OpenAPIValidation("/", openapiSpec))
 
 	// Create handler
 	ab, err := agentbrowser.New(cfg)
@@ -49,13 +49,20 @@ func main() {
 		log.Fatalf("failed to start dashboard: %v", err)
 	}
 
-	server := api.NewServer(ab, cfg)
-	handler := api.HandlerFromMux(server, router)
+	// Register api routes on group so take priority if matched
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.OpenAPIValidation("/", openapiSpec))
+		server := api.NewServer(ab, cfg)
+		api.HandlerFromMux(server, r)
+	})
+
+	// Register unmatched requests should be routed to dashboard proxy
+	router.Handle("/*", proxy.Dashboard())
 
 	// Start listening
 	address := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
 	log.Printf("Server listening on %s\n", address)
-	err = http.ListenAndServe(address, handler)
+	err = http.ListenAndServe(address, router)
 	if err != nil {
 		log.Fatal(err)
 	}
